@@ -20,8 +20,9 @@ app.use(fileUpload({
   tempFileDir: '/tmp/',
 }))
 app.use(cors({
-  origin: true, // Your frontend URL
+  origin: 'http://localhost:8000', // Your frontend URL
   credentials: true,
+  methods: ["GET","POST","PUT","PATCH","DELETE"]
 }));
 
 // API Routes
