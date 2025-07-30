@@ -19,7 +19,10 @@ app.use(fileUpload({
   useTempFiles: true,
   tempFileDir: '/tmp/',
 }))
-app.use(cors())
+app.use(cors({
+  origin: true, // Your frontend URL
+  credentials: true,
+}));
 
 // API Routes
 app.use('/api', require('./Routes/User'))
