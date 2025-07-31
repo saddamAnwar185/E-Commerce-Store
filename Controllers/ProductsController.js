@@ -70,50 +70,59 @@ const handleShowAllPrducts = async (req, res) => {
     }
 }
 
-const handleUpdateProduct = async(req, res) => {
-    const {title, description, price, category} = req.body
-    const file = req.files?.file
-    const id = req.params.id
+const handleUpdateProduct = async (req, res) => {
+  const { title, description, price, category } = req.body;
+  const file = req.files?.file;
+  const id = req.params.id;
 
-    try {
-        
-
-    if (!title || !description || !price || !category || !file) {
-      return res.status(400).json({ success: false, message: 'All fields and image are required' });
+  try {
+    if (!title || !description || !price || !category) {
+      return res.status(400).json({ success: false, message: 'All fields are required' });
     }
 
-    const updateProduct = await Products.findById(id)
-
-    const deleteImage = await cloudinary.uploader.destroy(updateProduct.productImage.public_id)
-
-    const result = await cloudinary.uploader.upload(file.tempFilePath, {
-      folder: 'products'
-    });
-
-    if(deleteImage && result) {
-        const updatedProduct = await Products.findByIdAndUpdate(id, {
-            title,
-            description,
-            price,
-            category,
-            productImage: {
-                secure_url: result.secure_url,
-                public_id: result.public_id
-            }
-        })
-
-        await updatedProduct.save()
-
-        if(updateProduct) {
-            res.json({ success: true, message: 'Product Updated' })
-        }
+    const existingProduct = await Products.findById(id);
+    if (!existingProduct) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
-    } catch (error) {
-        console.log(error)
-        res.json({ success: false, message: 'Internal Server error' })
+    let updatedImage = existingProduct.productImage;
+
+    // If a new file is uploaded
+    if (file) {
+      // Delete old image from Cloudinary
+      await cloudinary.uploader.destroy(existingProduct.productImage.public_id);
+
+      // Upload new image
+      const result = await cloudinary.uploader.upload(file.tempFilePath, {
+        folder: 'products',
+      });
+
+      updatedImage = {
+        secure_url: result.secure_url,
+        public_id: result.public_id,
+      };
     }
-}
+
+    // Update the product
+    const updatedProduct = await Products.findByIdAndUpdate(
+      id,
+      {
+        title,
+        description,
+        price,
+        category,
+        productImage: updatedImage,
+      },
+      { new: true }
+    );
+
+    res.json({ success: true, message: 'Product Updated', product: updatedProduct });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+};
 
 
 
